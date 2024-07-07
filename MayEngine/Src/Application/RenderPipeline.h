@@ -15,6 +15,10 @@
 #include <stdexcept>
 #include <vector>
 
+#include "Component/Camera.h"
+#include "Component/Light.h"
+#include "Component/Material.h"
+
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -23,10 +27,15 @@
 
 using Microsoft::WRL::ComPtr;
 
-class Application
+class RenderPipeline : public std::enable_shared_from_this<RenderPipeline>
 {
 public:
-	Application(unsigned int width, unsigned int height, std::wstring title);
+
+	static std::shared_ptr<RenderPipeline> Create(unsigned int width, unsigned int height, const std::wstring& title)
+	{
+		return std::shared_ptr<RenderPipeline>(new RenderPipeline(width, height, title));
+	}
+
 	void OnInit(HWND hwnd);
 	void OnUpdate();
 	void OnRender();
@@ -35,15 +44,9 @@ public:
 	const WCHAR* GetTitle() const { return title_.c_str(); }
 	unsigned int GetWindowWidth() const { return windowWidth_; }
 	unsigned int GetWindowHeight() const { return windowHeight_; }
-private:
+
 	static const unsigned int kFrameCount = 2;
-
-	std::wstring title_;
-	unsigned int windowWidth_;
-	unsigned int windowHeight_;
-
-	CD3DX12_VIEWPORT viewport_; // ビューポート
-	CD3DX12_RECT scissorrect_;  // シザー短形
+	static const unsigned int kCbvUrvMax = 3;
 
 	// パイプラインオブジェクト
 	ComPtr<ID3D12Device> device_;
@@ -60,54 +63,47 @@ private:
 	ComPtr<ID3D12RootSignature> rootsignature_;         // ルートシグネチャ
 
 	// リソース
-	ComPtr<ID3D12Resource> vertexBuffer_;
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
-	ComPtr<ID3D12Resource> indexBuffer_;
-	D3D12_INDEX_BUFFER_VIEW indexBufferView_;
 	ComPtr<ID3D12Resource> constMatricesBuffer_;
-	ComPtr<ID3D12Resource> constLightingBuffer_;
-	ComPtr<ID3D12Resource> textureBuffer_;
 
 	// フェンス
 	ComPtr<ID3D12Fence> fence_;
 	UINT64 fenceValue_;
 	HANDLE fenceEvent_;
 
+	int AssignBuffer();
+	void SetMatrixBuffer(int handle, const DirectX::XMMATRIX* worldMatrix);
+	void SetMatrixBufferPosition(int handle) const;
+	void CreateMatrixBufferView(int handle, const DirectX::XMMATRIX* worldMatrix);
+
+private:
+	RenderPipeline(unsigned int width, unsigned int height, std::wstring title);
+
+	std::wstring title_;
+	unsigned int windowWidth_;
+	unsigned int windowHeight_;
+
+	const int maxCBufferBlockCount = 1024;
+	int usingCBufferCount = 0;
+
+	CD3DX12_VIEWPORT viewport_; // ビューポート
+	CD3DX12_RECT scissorrect_;  // シザー短形
+
+	Camera camera;  // カメラ
+	Light light;  // ライト
+	Material material;  // マテリアル
+
 	// 3D座標変換用行列
-	DirectX::XMMATRIX worldMatrix_;
-	DirectX::XMMATRIX viewMatrix_;
-	DirectX::XMMATRIX projMatrix_;
 	struct MatricesData
 	{
 		DirectX::XMMATRIX world;
 		DirectX::XMMATRIX viewproj;
 	};
+
 	MatricesData* mapMatricesData_;
-
-	// ライティング用
-	DirectX::XMVECTOR ambientLight_ = { 0.35f, 0.35f, 0.35f };
-	DirectX::XMVECTOR lightColor_ = { 0.8f, 0.8f, 1.0f };
-	DirectX::XMVECTOR lightDirection_ = { 0.3f, 0.3f, 0.8f };
-	struct LightingData
-	{
-		DirectX::XMVECTOR ambientLight;
-		DirectX::XMVECTOR lightColor;
-		DirectX::XMVECTOR lightDirection;
-	};
-	LightingData* mapLightingData_;
-
-	// オブジェクトのパラメータを想定
-	// ゴロヤン
-	float angle_ = 30.0f;
-	float scale_ = 1.8f;
-	DirectX::XMFLOAT3 translate_ = { 0.0f, -2.5f, -0.25f };
-	// サイコロ
-	//float angle_ = 30.0f;
-	//float scale_ = 1.0f;
-	//DirectX::XMFLOAT3 translate_ = { 0.0f, 0.0f, -0.0f };
-
-	FbxLoader::VertexInfo fbxVertexInfo_;
 
 	void LoadPipeline(HWND hwnd);
 	void LoadAssets();
+	void CreateRootSignature();
+	void CreatePipelineState();
+	void CreateMatrixBufferResources();
 };

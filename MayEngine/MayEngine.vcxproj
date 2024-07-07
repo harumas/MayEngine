@@ -132,17 +132,34 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Src\Application\Component\Light.h" />
+    <ClInclude Include="Src\Application\Component\Material.h" />
+    <ClInclude Include="Src\Application\Component\Component.h" />
+    <ClInclude Include="Src\Application\Component\GameObject.h" />
+    <ClInclude Include="Src\Application\Component\Renderer.h" />
+    <ClInclude Include="Src\Application\Utility\MathHelper.h" />
+    <ClInclude Include="Src\Application\Component\Camera.h" />
+    <ClInclude Include="Src\Application\Utility\Mesh.h" />
+    <ClInclude Include="Src\Application\Utility\ObjectService.h" />
+    <ClInclude Include="Src\Application\Component\Transform.h" />
     <ClInclude Include="Src\Application\d3dx12.h" />
-    <ClInclude Include="Src\Application\Application.h" />
+    <ClInclude Include="Src\Application\RenderPipeline.h" />
     <ClInclude Include="Src\Application\DXTexFix.h" />
     <ClInclude Include="Src\Application\FbxLoader.h" />
     <ClInclude Include="Src\Application\Helper.h" />
     <ClInclude Include="Src\Application\Win32Application.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Src\Application\Application.cpp" />
+    <ClCompile Include="Src\Application\Component\Light.cpp" />
+    <ClCompile Include="Src\Application\Component\Material.cpp" />
+    <ClCompile Include="Src\Application\Component\Camera.cpp" />
+    <ClCompile Include="Src\Application\RenderPipeline.cpp" />
+    <ClCompile Include="Src\Application\Component\Component.cpp" />
+    <ClCompile Include="Src\Application\Component\GameObject.cpp" />
+    <ClCompile Include="Src\Application\Component\Renderer.cpp" />
     <ClCompile Include="Src\Application\FbxLoader.cpp" />
     <ClCompile Include="Src\Application\Main.cpp" />
+    <ClCompile Include="Src\Application\Utility\MathHelper.cpp" />
     <ClCompile Include="Src\Application\Win32Application.cpp" />
   </ItemGroup>
   <ItemGroup>

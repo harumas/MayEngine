@@ -1,0 +1,12 @@
+﻿#pragma once
+#include "GameObject.h"
+#include "../Utility/ObjectService.h"
+
+class Component : Object
+{
+public:
+	weak_ptr<GameObject> gameObject;
+
+	explicit Component(const shared_ptr<GameObject>& gameObjectPtr);
+	virtual ~Component() {}
+};

@@ -2,7 +2,10 @@
 #include <fbxsdk.h>
 #include <vector>
 #include <array>
+#include <d3d12.h>
 #include <string>
+
+#include "Utility/Mesh.h"
 
 #pragma comment(lib, "libfbxsdk-md.lib")
 #pragma comment(lib, "libxml2-md.lib")
@@ -13,19 +16,7 @@ class FbxLoader
 public:
 	FbxLoader();
 
-	struct Vertex
-	{
-		float pos[3];
-		float normal[3];
-		float uv[2];
-	};
-	struct VertexInfo
-	{
-		std::vector<Vertex> vertices;
-		std::vector<unsigned short> indices;
-	};
-
-	static bool Load(const std::string& filePath, VertexInfo* vertexInfo);
+	static bool Load(const std::string& filePath, Mesh* mesh);
 
 private:
 	static bool IsExistNormalUVInfo(const std::vector<float>& vertexInfo);

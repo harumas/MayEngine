@@ -1,6 +1,6 @@
 #include "Win32Application.h"
 
-void Win32Application::Run(Application* dxApp, HINSTANCE hInstance)
+void Win32Application::Run(const std::shared_ptr<RenderPipeline>& dxApp, HINSTANCE hInstance)
 {
 	// ウィンドウクラス生成
 	WNDCLASSEX windowClass = {};
@@ -8,7 +8,7 @@ void Win32Application::Run(Application* dxApp, HINSTANCE hInstance)
 	windowClass.style = CS_HREDRAW | CS_VREDRAW;
 	windowClass.lpfnWndProc = WindowProc;
 	windowClass.hInstance = hInstance;
-	windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	windowClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	windowClass.lpszClassName = _T("DXSampleClass");
 	RegisterClassEx(&windowClass);
 

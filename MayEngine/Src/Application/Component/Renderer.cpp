@@ -1,0 +1,88 @@
+﻿#include "Renderer.h"
+
+void Renderer::LoadMesh(const string& filePath)
+{
+	// fbxモデルのロード
+	if (!FbxLoader::Load(filePath, &mesh))
+	{
+		ThrowMessage("failed load fbx file.");
+	}
+
+	//三角ポリゴン
+	mesh.topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	if (auto pipeline = GetPipeline().lock())
+	{
+		matrixHandle = pipeline->AssignBuffer();
+
+		// 頂点バッファビューの生成
+		{
+			// 頂点座標
+			std::vector<Vertex> vertices = mesh.vertices;
+			const UINT vertexBufferSize = sizeof(Vertex) * vertices.size();
+			auto vertexHeapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+			auto vertexResDesc = CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize);
+			// 頂点バッファーの生成
+			ThrowIfFailed(pipeline->device_->CreateCommittedResource(
+				&vertexHeapProp,
+				D3D12_HEAP_FLAG_NONE,
+				&vertexResDesc,
+				D3D12_RESOURCE_STATE_GENERIC_READ,
+				nullptr,
+				IID_PPV_ARGS(vertexBuffer_.ReleaseAndGetAddressOf())));
+			// 頂点情報のコピー
+			Vertex* vertexMap = nullptr;
+			ThrowIfFailed(vertexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&vertexMap)));
+			std::copy(std::begin(vertices), std::end(vertices), vertexMap);
+			vertexBuffer_->Unmap(0, nullptr);
+			// 頂点バッファービューの生成
+			vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
+			vertexBufferView_.SizeInBytes = vertexBufferSize;
+			vertexBufferView_.StrideInBytes = sizeof(Vertex);
+		}
+
+		// インデックスバッファビューの生成
+		{
+			// インデックス座標
+			std::vector<unsigned short> indices = mesh.indices;
+			const UINT indexBufferSize = sizeof(unsigned short) * indices.size();
+			auto indexHeapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+			auto indexResDesc = CD3DX12_RESOURCE_DESC::Buffer(indexBufferSize);
+			// インデックスバッファの生成
+			ThrowIfFailed(pipeline->device_->CreateCommittedResource(
+				&indexHeapProp,
+				D3D12_HEAP_FLAG_NONE,
+				&indexResDesc,
+				D3D12_RESOURCE_STATE_GENERIC_READ,
+				nullptr,
+				IID_PPV_ARGS(indexBuffer_.ReleaseAndGetAddressOf())));
+			// インデックス情報のコピー
+			unsigned short* indexMap = nullptr;
+			indexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&indexMap));
+			std::copy(std::begin(indices), std::end(indices), indexMap);
+			indexBuffer_->Unmap(0, nullptr);
+			// インデックスバッファビューの生成
+			indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
+			indexBufferView_.SizeInBytes = indexBufferSize;
+			indexBufferView_.Format = DXGI_FORMAT_R16_UINT;
+		}
+	}
+}
+
+void Renderer::Draw()
+{
+	if (auto pipeline = GetPipeline().lock())
+	{
+		const ComPtr<ID3D12GraphicsCommandList>& commandList = pipeline->commandList_;
+
+		const DirectX::XMMATRIX matrix = gameObject.lock()->transform.GetMatrix();
+		pipeline->SetMatrixBuffer(matrixHandle, &matrix);
+		pipeline->SetMatrixBufferPosition();
+
+		// 描画処理の設定
+		commandList->IASetPrimitiveTopology(mesh.topology); // プリミティブトポロジの設定 (三角ポリゴン)
+		commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);                // 頂点バッファ
+		commandList->IASetIndexBuffer(&indexBufferView_);                         // インデックスバッファ
+		commandList->DrawIndexedInstanced(mesh.indices.size(), 1, 0, 0, 0);  // 描画
+	}
+}

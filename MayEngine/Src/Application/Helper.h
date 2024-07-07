@@ -1,5 +1,5 @@
 #pragma once
-#include "Application.h"
+#include "RenderPipeline.h"
 
 
 // D3D12Deviceの生成
