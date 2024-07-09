@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include "GameObject.h"
-#include "../Utility/ObjectService.h"
+#include "ObjectService.h"
 
-class Component : Object
+class Component : public Object
 {
 public:
 	weak_ptr<GameObject> gameObject;

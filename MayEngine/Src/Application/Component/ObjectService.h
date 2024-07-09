@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
-#include "../Helper.h"
-#include "../RenderPipeline.h"
+#include <vector>
 
 using namespace std;
 
@@ -14,10 +13,7 @@ protected:
 	}
 	virtual ~Object() = default;
 
-
 public:
-	weak_ptr<RenderPipeline> GetPipeline() { return RenderPipeline::weak_from_this(); }
-
 	virtual void OnCreate();
 	virtual void OnUpdate();
 	virtual void OnDraw();

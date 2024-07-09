@@ -1,15 +1,16 @@
 ﻿#include "Material.h"
 
+
 void Material::CreateShaderResourceBuffer()
 {
-	if (auto pipeline = GetPipeline().lock())
+	if (auto pipeline = RenderPipeline::instance)
 	{
-		DirectX::TexMetadata metadata = {};
-		DirectX::ScratchImage scratchImg = {};
+		TexMetadata metadata = {};
+		ScratchImage scratchImg = {};
 
 		std::vector<D3D12_SUBRESOURCE_DATA> textureSubresources;
 		{
-			ThrowIfFailed(LoadFromWICFile(L"Assets/textures/grass_block.png", DirectX::WIC_FLAGS_NONE, &metadata, scratchImg));
+			ThrowIfFailed(LoadFromWICFile(L"Assets/textures/grass_block.png", WIC_FLAGS_NONE, &metadata, scratchImg));
 			ThrowIfFailed(DxTexFix::PrepareUpload(pipeline->device_.Get(), scratchImg.GetImages(), scratchImg.GetImageCount(), metadata, textureSubresources));
 		}
 
@@ -58,7 +59,7 @@ void Material::CreateShaderResourceBuffer()
 
 void Material::CreateShaderResourceView(D3D12_CPU_DESCRIPTOR_HANDLE basicHeapHandle)
 {
-	if (auto pipeline = GetPipeline().lock())
+	if (auto pipeline = RenderPipeline::instance)
 	{
 		// シェーダーリソースビューの生成
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};

@@ -1,33 +1,44 @@
 #include "RenderPipeline.h"
 #include "Win32Application.h"
 #include "Component/Camera.h"
-#include "Utility/ObjectService.h"
-
-
+#include "Component/Light.h"
+#include "Component/Material.h"
+#include "Component/Renderer.h"
 
 RenderPipeline::RenderPipeline(unsigned int width, unsigned int height, std::wstring title)
 	: title_(title)
-	, windowWidth_(width)
-	, windowHeight_(height)
-	, viewport_(0.0f, 0.0f, static_cast<float>(windowWidth_), static_cast<float>(windowHeight_))
-	, scissorrect_(0, 0, static_cast<LONG>(windowWidth_), static_cast<LONG>(windowHeight_))
-	, fenceValue_(0)
-	, fenceEvent_(nullptr)
+	  , windowWidth_(width)
+	  , windowHeight_(height)
+	  , viewport_(0.0f, 0.0f, static_cast<float>(windowWidth_), static_cast<float>(windowHeight_))
+	  , scissorrect_(0, 0, static_cast<LONG>(windowWidth_), static_cast<LONG>(windowHeight_))
+	  , cameraObject("Camera"),testObject("Test"), fenceValue_(0)
+	  , fenceEvent_(nullptr)
 {
+	light = make_shared<Light>();
+	material = make_shared<Material>();
 }
 
 // 初期化処理
 void RenderPipeline::OnInit(HWND hwnd)
 {
+	LoadPipeline(hwnd);
+	LoadAssets();
+	 
+	camera = cameraObject.AddComponent<Camera>();
+	renderer = testObject.AddComponent<Renderer>();
+	renderer->LoadMesh("Assets/blocks/grass_block.fbx");
+	 
+	auto basicHandle = basicHeap_->GetCPUDescriptorHandleForHeapStart();
+	basicHandle.ptr += device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	light->CreateLightingBufferView(basicHandle);
+	material->CreateShaderResourceView(basicHandle);
+	 
 	//FoV: 90
 	//nearPlane: 1
 	//farPlane: 1000
-	camera.Init(XM_PIDIV2, 1.0f, 1000.0f);
-	camera.transform.position = Vector3{ 0.0f, 3.0f, -10.0f };
-	camera.SetYaw(0.0f);
-
-	LoadPipeline(hwnd);
-	LoadAssets();
+	camera->Init(XM_PIDIV2, 1.0f, 1000.0f);
+	camera->transform->position = Vector3{ 0.0f, 3.0f, -10.0f };
+	camera->SetYaw(0.0f);
 }
 
 void RenderPipeline::LoadPipeline(HWND hwnd)
@@ -82,7 +93,7 @@ void RenderPipeline::LoadPipeline(HWND hwnd)
 			&swapchainDesc,
 			nullptr,
 			nullptr,
-			(IDXGISwapChain1**)swapchain_.ReleaseAndGetAddressOf()));
+			reinterpret_cast<IDXGISwapChain1**>(swapchain_.ReleaseAndGetAddressOf())));
 	}
 
 	// ディスクリプタヒープの初期化
@@ -171,10 +182,10 @@ void RenderPipeline::LoadAssets()
 
 	CreateMatrixBufferResources();
 
-	light.CreateLightingBuffer();
+	light->CreateLightingBuffer();
 
-	material.CreateShaderResourceBuffer();
-
+	material->CreateShaderResourceBuffer();
+	 
 	// 命令のクローズ
 	commandList_->Close();
 
@@ -312,7 +323,7 @@ int RenderPipeline::AssignBuffer()
 	return handle;
 }
 
-void RenderPipeline::SetMatrixBuffer(int handle, const DirectX::XMMATRIX* worldMatrix)
+void RenderPipeline::SetMatrixBuffer(int handle, const DirectX::XMMATRIX& worldMatrix)
 {
 	//バッファを読み取る範囲を設定する
 	const CD3DX12_RANGE readRange(0, 0);
@@ -321,8 +332,8 @@ void RenderPipeline::SetMatrixBuffer(int handle, const DirectX::XMMATRIX* worldM
 	//バッファに書き込む
 	constMatricesBuffer_->Map(0, &readRange, reinterpret_cast<void**>(&mapMatricesData_));
 	MatricesData* ptr = mapMatricesData_ + handle;
-	ptr->world = *worldMatrix;
-	ptr->viewproj = camera.GetViewMatrix() * camera.GetProjectionMatrix(aspectRatio);
+	ptr->world = worldMatrix;
+	ptr->viewproj = camera->GetViewMatrix() * camera->GetProjectionMatrix(aspectRatio);
 	constMatricesBuffer_->Unmap(0, nullptr);
 }
 
@@ -333,11 +344,10 @@ void RenderPipeline::SetMatrixBufferPosition(int handle) const
 	commandList_->SetGraphicsRootDescriptorTable(0, startAddress);
 }
 
-void RenderPipeline::CreateMatrixBufferView(int handle, const DirectX::XMMATRIX* worldMatrix)
+void RenderPipeline::CreateMatrixBufferView(int handle, const DirectX::XMMATRIX& worldMatrix)
 {
 	int sizeAligned = (sizeof(mapMatricesData_) + 0xff) & ~0xff;
 
-	//TODO matrix情報の初期化
 	SetMatrixBuffer(handle, worldMatrix);
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};

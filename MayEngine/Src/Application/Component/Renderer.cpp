@@ -11,7 +11,7 @@ void Renderer::LoadMesh(const string& filePath)
 	//三角ポリゴン
 	mesh.topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-	if (auto pipeline = GetPipeline().lock())
+	if (auto pipeline = GetPipeline())
 	{
 		matrixHandle = pipeline->AssignBuffer();
 
@@ -71,11 +71,11 @@ void Renderer::LoadMesh(const string& filePath)
 
 void Renderer::Draw()
 {
-	if (auto pipeline = GetPipeline().lock())
+	if (auto pipeline = GetPipeline())
 	{
 		const ComPtr<ID3D12GraphicsCommandList>& commandList = pipeline->commandList_;
 
-		const DirectX::XMMATRIX matrix = gameObject.lock()->transform.GetMatrix();
+		const DirectX::XMMATRIX matrix = gameObject.lock()->transform->GetMatrix();
 		pipeline->SetMatrixBuffer(matrixHandle, &matrix);
 		pipeline->SetMatrixBufferPosition();
 

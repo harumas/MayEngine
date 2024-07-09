@@ -1,5 +1,9 @@
 ﻿#pragma once
-#include "../Utility/ObjectService.h"
+#include <d3d12.h>
+#include <wrl/client.h>
+
+#include "ObjectService.h"
+#include "../RenderPipeline.h"
 
 class Material : Object
 {
@@ -8,5 +12,5 @@ public:
 	void CreateShaderResourceView(D3D12_CPU_DESCRIPTOR_HANDLE basicHeapHandle);
 private:
 	D3D12_RESOURCE_DESC textureDesc = {};
-	ComPtr<ID3D12Resource> textureBuffer_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> textureBuffer_;
 };

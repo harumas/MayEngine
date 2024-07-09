@@ -1,5 +1,6 @@
 #pragma once
 #include "Component.h"
+#include "../RenderPipeline.h"
 
 class Light : Object
 {

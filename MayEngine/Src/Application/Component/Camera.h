@@ -1,18 +1,21 @@
 #pragma once
-#include "../Utility/Transform.h"
+#include "Component.h"
+#include "GameObject.h"
+#include "../Component/Transform.h"
 
-class Camera
+class Camera : public Component
 {
 public:
-	Camera();
+	Camera(const shared_ptr<GameObject>& gameObject);
+	 
 	XMMATRIX GetViewMatrix() const;
 	XMMATRIX GetProjectionMatrix(float aspectRatio) const;
 
 	void Init(float fov, float nearPlane, float farPlane);
 	void SetYaw(float yaw);
 	void SetPitch(float pitch);
-
-	Transform transform;
+	 
+	shared_ptr<Transform> transform;
 
 private:
 	float fov;

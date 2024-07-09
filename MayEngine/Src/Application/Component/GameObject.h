@@ -1,13 +1,41 @@
 ﻿#pragma once
-#include "../RenderPipeline.h"
+#include <memory>
+#include <string>
+#include <typeindex>
+#include <unordered_map>
+
+#include "Component.h"
+
+class Transform;
+using namespace std;
 
 class GameObject
 {
 public:
-	GameObject() = default;
+	explicit GameObject(const string& name) : name(name)
+	{
+		AddComponent<Transform>();
+	};
+	 
+	string name;
 
 	template<typename T, typename... Ts>
-	T AddComponent();
+	shared_ptr<T> AddComponent(Ts&&... params)
+	{
+		shared_ptr<Component> component = make_shared<T>(params);
+		components.emplace(typeid(T), component);
+		 
+		component->OnCreate();
+		 
+		return component;
+	}
+	 
+	template<typename T>
+	shared_ptr<T> GetComponent()
+	{
+		return components[typeid(T)];
+	}
+	 
 private:
-	vector<shared_ptr<Component>> components;
+	unordered_map<type_index, shared_ptr<Component>> components;
 };

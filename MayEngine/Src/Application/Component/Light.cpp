@@ -2,7 +2,7 @@
 
 void Light::CreateLightingBuffer()
 {
-	if (auto pipeline = GetPipeline().lock())
+	if (auto pipeline = RenderPipeline::instance)
 	{
 		const auto constHeapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 		const auto constDesc = CD3DX12_RESOURCE_DESC::Buffer((sizeof(mapLightingData) + 0xff) & ~0xff);
@@ -19,7 +19,7 @@ void Light::CreateLightingBuffer()
 
 void Light::CreateLightingBufferView(D3D12_CPU_DESCRIPTOR_HANDLE basicHeapHandle)
 {
-	if (auto pipeline = GetPipeline().lock())
+	if (auto pipeline = RenderPipeline::instance)
 	{
 		// 定数バッファービューの生成
 		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};

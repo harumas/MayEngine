@@ -15,25 +15,37 @@
 #include <stdexcept>
 #include <vector>
 
-#include "Component/Camera.h"
-#include "Component/Light.h"
-#include "Component/Material.h"
+#include <basetsd.h>
+#include <dxgi1_5.h>
+#include <windef.h>
+#include <winnt.h>
+#include <wrl/client.h>
+#include <memory>
+#include <string>
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "DirectXTex.lib")
+ 
+#include "Component/GameObject.h"
 
 using Microsoft::WRL::ComPtr;
+using namespace std;
+ 
+class Renderer;
+class Camera;
+class Light;
+class Material;
 
 class RenderPipeline : public std::enable_shared_from_this<RenderPipeline>
 {
 public:
-
 	static std::shared_ptr<RenderPipeline> Create(unsigned int width, unsigned int height, const std::wstring& title)
 	{
-		return std::shared_ptr<RenderPipeline>(new RenderPipeline(width, height, title));
+		RenderPipeline::instance =  std::shared_ptr<RenderPipeline>(new RenderPipeline(width, height, title));
+		return RenderPipeline::instance;
 	}
 
 	void OnInit(HWND hwnd);
@@ -71,10 +83,11 @@ public:
 	HANDLE fenceEvent_;
 
 	int AssignBuffer();
-	void SetMatrixBuffer(int handle, const DirectX::XMMATRIX* worldMatrix);
+	void SetMatrixBuffer(int handle, const DirectX::XMMATRIX& worldMatrix);
 	void SetMatrixBufferPosition(int handle) const;
-	void CreateMatrixBufferView(int handle, const DirectX::XMMATRIX* worldMatrix);
-
+	void CreateMatrixBufferView(int handle, const DirectX::XMMATRIX& worldMatrix);
+	 
+	static shared_ptr<RenderPipeline> instance;
 private:
 	RenderPipeline(unsigned int width, unsigned int height, std::wstring title);
 
@@ -88,9 +101,12 @@ private:
 	CD3DX12_VIEWPORT viewport_; // ビューポート
 	CD3DX12_RECT scissorrect_;  // シザー短形
 
-	Camera camera;  // カメラ
-	Light light;  // ライト
-	Material material;  // マテリアル
+	GameObject cameraObject;
+	GameObject testObject;
+	shared_ptr<Camera> camera;  // カメラ
+	shared_ptr<Renderer> renderer;
+	shared_ptr<Light> light;  // ライト
+	shared_ptr<Material> material;  // マテリアル
 
 	// 3D座標変換用行列
 	struct MatricesData
