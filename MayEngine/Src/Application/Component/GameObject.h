@@ -15,8 +15,8 @@ public:
 	explicit GameObject(const string& name) : name(name)
 	{
 		AddComponent<Transform>();
-	};
-	 
+	}
+
 	string name;
 
 	template<typename T, typename... Ts>
@@ -24,18 +24,18 @@ public:
 	{
 		shared_ptr<Component> component = make_shared<T>(params);
 		components.emplace(typeid(T), component);
-		 
+
 		component->OnCreate();
-		 
+
 		return component;
 	}
-	 
+
 	template<typename T>
 	shared_ptr<T> GetComponent()
 	{
 		return components[typeid(T)];
 	}
-	 
+
 private:
 	unordered_map<type_index, shared_ptr<Component>> components;
 };

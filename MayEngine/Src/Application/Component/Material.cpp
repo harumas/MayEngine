@@ -5,12 +5,12 @@ void Material::CreateShaderResourceBuffer()
 {
 	if (auto pipeline = RenderPipeline::instance)
 	{
-		TexMetadata metadata = {};
-		ScratchImage scratchImg = {};
+		DirectX::TexMetadata metadata = {};
+		DirectX::ScratchImage scratchImg = {};
 
 		std::vector<D3D12_SUBRESOURCE_DATA> textureSubresources;
 		{
-			ThrowIfFailed(LoadFromWICFile(L"Assets/textures/grass_block.png", WIC_FLAGS_NONE, &metadata, scratchImg));
+			ThrowIfFailed(LoadFromWICFile(L"Assets/textures/grass_block.png", DirectX::WIC_FLAGS_NONE, &metadata, scratchImg));
 			ThrowIfFailed(DxTexFix::PrepareUpload(pipeline->device_.Get(), scratchImg.GetImages(), scratchImg.GetImageCount(), metadata, textureSubresources));
 		}
 
