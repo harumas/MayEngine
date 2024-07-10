@@ -53,10 +53,6 @@ public:
 	void OnRender();
 	void OnDestroy();
 
-	const WCHAR* GetTitle() const { return title_.c_str(); }
-	unsigned int GetWindowWidth() const { return windowWidth_; }
-	unsigned int GetWindowHeight() const { return windowHeight_; }
-
 	static const unsigned int kFrameCount = 2;
 	static const unsigned int kCbvUrvMax = 3;
 
@@ -91,7 +87,6 @@ public:
 private:
 	RenderPipeline(unsigned int width, unsigned int height, std::wstring title);
 
-	std::wstring title_;
 	unsigned int windowWidth_;
 	unsigned int windowHeight_;
 
