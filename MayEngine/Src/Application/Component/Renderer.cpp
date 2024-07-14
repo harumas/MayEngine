@@ -1,5 +1,15 @@
 ﻿#include "Renderer.h"
 
+#include "GameObject.h"
+#include "Transform.h"
+
+Renderer::Renderer(const std::shared_ptr<GameObject>& gameObjectPtr) :
+	Component(gameObjectPtr),
+	modelMatrixBuffer(RenderPipeline::instance->device_, RenderPipeline::instance->commandList_)
+{
+
+}
+
 void Renderer::LoadMesh(const string& filePath)
 {
 	// fbxモデルのロード
@@ -11,10 +21,8 @@ void Renderer::LoadMesh(const string& filePath)
 	//三角ポリゴン
 	mesh.topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-	if (auto pipeline = GetPipeline())
+	if (auto pipeline = RenderPipeline::instance)
 	{
-		matrixHandle = pipeline->AssignBuffer();
-
 		// 頂点バッファビューの生成
 		{
 			// 頂点座標
@@ -71,18 +79,20 @@ void Renderer::LoadMesh(const string& filePath)
 
 void Renderer::Draw()
 {
-	if (auto pipeline = GetPipeline())
+	if (const auto pipeline = RenderPipeline::instance)
 	{
 		const ComPtr<ID3D12GraphicsCommandList>& commandList = pipeline->commandList_;
-
-		const DirectX::XMMATRIX matrix = gameObject.lock()->transform->GetMatrix();
-		pipeline->SetMatrixBuffer(matrixHandle, &matrix);
-		pipeline->SetMatrixBufferPosition();
 
 		// 描画処理の設定
 		commandList->IASetPrimitiveTopology(mesh.topology); // プリミティブトポロジの設定 (三角ポリゴン)
 		commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);                // 頂点バッファ
 		commandList->IASetIndexBuffer(&indexBufferView_);                         // インデックスバッファ
+
+		const DirectX::XMMATRIX matrix = gameObject.lock()->GetComponent<Transform>()->GetMatrix();
+
+		modelMatrixBuffer.SetBufferData(matrix);
+		modelMatrixBuffer.SetConstantBufferView(0);
+
 		commandList->DrawIndexedInstanced(mesh.indices.size(), 1, 0, 0, 0);  // 描画
 	}
 }

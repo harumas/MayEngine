@@ -1,10 +1,11 @@
 #include "FbxLoader.h"
+#include "Utility/Mesh.h"
 
 FbxLoader::FbxLoader()
 {
 }
 
-bool FbxLoader::Load(const std::string& filePath, Mesh* mesh)
+bool FbxLoader::Load(const std::string& filePath, Mesh* vertexInfo)
 {
 	// マネージャー初期化
 	auto manager = FbxManager::Create();
@@ -119,7 +120,7 @@ bool FbxLoader::Load(const std::string& filePath, Mesh* mesh)
 	manager->Destroy();
 
 	// 返却値に設定
-	*mesh = {
+	*vertexInfo = {
 		vertices,
 		indices
 	};

@@ -4,9 +4,12 @@
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 {
 	auto result = CoInitializeEx(NULL, COINITBASE_MULTITHREADED);
-	if (FAILED(result)) return 1;
+	if (FAILED(result))
+	{
+		return 1;
+	}
 
-	const std::shared_ptr<RenderPipeline> dxApp = RenderPipeline::Create(1280, 720, L"DX Sample");
-	Win32Application::Run(dxApp, hInstance);
+	GameApplication gameApp(1920, 1080, L"MayEngine");
+	Win32Application::Run(gameApp, hInstance);
 	return 0;
 }

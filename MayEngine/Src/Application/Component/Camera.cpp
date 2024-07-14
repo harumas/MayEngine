@@ -1,9 +1,13 @@
 #include "Camera.h"
 
+#include "../AppInfo.h"
+#include "../RenderPipeline.h"
+
 Camera::Camera(const shared_ptr<GameObject>& gameObject) : Component(gameObject),
-                                                           fov(0),
-                                                           nearPlane(0),
-                                                           farPlane(0)
+fov(0),
+nearPlane(0),
+farPlane(0),
+viewBuffer(RenderPipeline::instance->device_, RenderPipeline::instance->commandList_)
 {
 	transform = gameObject->GetComponent<Transform>();
 	transform->rotation = Vector3(0, XM_PI, 0);
@@ -38,4 +42,13 @@ void Camera::SetYaw(float yaw)
 void Camera::SetPitch(float pitch)
 {
 	transform->rotation.x = pitch;
+}
+
+void Camera::OnUpdate()
+{
+	const float aspectRatio = AppInfo::GetWindowAspectRatio();
+	XMMATRIX matrix = GetViewMatrix() * GetProjectionMatrix(aspectRatio);
+
+	viewBuffer.SetBufferData(matrix);
+	viewBuffer.SetConstantBufferView(1);
 }

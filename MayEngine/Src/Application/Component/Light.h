@@ -1,6 +1,7 @@
 #pragma once
 #include "Component.h"
 #include "../RenderPipeline.h"
+#include "../../../ConstantBuffer.h"
 
 class Light : Object
 {
@@ -10,9 +11,10 @@ public:
 	DirectX::XMVECTOR lightColor = { 0.8f, 0.8f, 1.0f };
 	DirectX::XMVECTOR lightDirection = { 0.3f, 0.3f, 0.8f };
 
-	void CreateLightingBuffer();
-	void CreateLightingBufferView(D3D12_CPU_DESCRIPTOR_HANDLE basicHeapHandle);
+	void OnCreate() override;
 private:
+	Light();
+
 	struct LightingData
 	{
 		DirectX::XMVECTOR ambientLight;
@@ -20,7 +22,5 @@ private:
 		DirectX::XMVECTOR lightDirection;
 	};
 
-	ComPtr<ID3D12Resource> constLightingBuffer;
-
-	LightingData* mapLightingData;
+	ConstantBuffer<LightingData> constantLightBuffer;
 };

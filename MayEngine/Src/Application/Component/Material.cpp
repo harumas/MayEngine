@@ -1,7 +1,7 @@
 ﻿#include "Material.h"
 
 
-void Material::CreateShaderResourceBuffer()
+void Material::CreateShaderResourceBuffer(const wstring& texturePath)
 {
 	if (auto pipeline = RenderPipeline::instance)
 	{
@@ -10,7 +10,7 @@ void Material::CreateShaderResourceBuffer()
 
 		std::vector<D3D12_SUBRESOURCE_DATA> textureSubresources;
 		{
-			ThrowIfFailed(LoadFromWICFile(L"Assets/textures/grass_block.png", DirectX::WIC_FLAGS_NONE, &metadata, scratchImg));
+			ThrowIfFailed(LoadFromWICFile(texturePath.c_str(), DirectX::WIC_FLAGS_NONE, &metadata, scratchImg));
 			ThrowIfFailed(DxTexFix::PrepareUpload(pipeline->device_.Get(), scratchImg.GetImages(), scratchImg.GetImageCount(), metadata, textureSubresources));
 		}
 
@@ -34,11 +34,11 @@ void Material::CreateShaderResourceBuffer()
 			&textureDesc,
 			D3D12_RESOURCE_STATE_COPY_DEST,
 			nullptr,
-			IID_PPV_ARGS(textureBuffer_.ReleaseAndGetAddressOf())));
+			IID_PPV_ARGS(textureBuffer.ReleaseAndGetAddressOf())));
 
 		ComPtr<ID3D12Resource> textureUploadBuffer;
 		{
-			const UINT64 textureBufferSize = GetRequiredIntermediateSize(textureBuffer_.Get(), 0, 1);
+			const UINT64 textureBufferSize = GetRequiredIntermediateSize(textureBuffer.Get(), 0, 1);
 			auto textureUploadHeapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 			auto textureUploadDesc = CD3DX12_RESOURCE_DESC::Buffer(textureBufferSize);
 			ThrowIfFailed(pipeline->device_->CreateCommittedResource(
@@ -51,22 +51,28 @@ void Material::CreateShaderResourceBuffer()
 		}
 
 		// テクスチャバッファの転送
-		UpdateSubresources(pipeline->commandList_.Get(), textureBuffer_.Get(), textureUploadBuffer.Get(), 0, 0, textureSubresources.size(), textureSubresources.data());
-		auto uploadResourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(textureBuffer_.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		UpdateSubresources(pipeline->commandList_.Get(), textureBuffer.Get(), textureUploadBuffer.Get(), 0, 0, textureSubresources.size(), textureSubresources.data());
+		auto uploadResourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(textureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 		pipeline->commandList_->ResourceBarrier(1, &uploadResourceBarrier);
 	}
 }
 
-void Material::CreateShaderResourceView(D3D12_CPU_DESCRIPTOR_HANDLE basicHeapHandle)
+void Material::CreateShaderResourceView(UINT heapIndex)
 {
 	if (auto pipeline = RenderPipeline::instance)
 	{
+		D3D12_CPU_DESCRIPTOR_HANDLE descriptorHandle = pipeline->GetDescriptorHandle(heapIndex);
+
 		// シェーダーリソースビューの生成
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		srvDesc.Format = textureDesc.Format;
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Texture2D.MipLevels = 1;
-		pipeline->device_->CreateShaderResourceView(textureBuffer_.Get(), &srvDesc, basicHeapHandle);
+		pipeline->device_->CreateShaderResourceView(textureBuffer.Get(), &srvDesc, descriptorHandle);
 	}
+}
+
+void Material::OnUpdate()
+{
 }

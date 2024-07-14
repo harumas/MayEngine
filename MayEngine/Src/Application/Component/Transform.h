@@ -6,7 +6,7 @@ using namespace DirectX;
 
 class Transform : public Component
 {
-public: 
+public:
 	Vector3 position;
 	Vector3 rotation;
 	Vector3 scale;

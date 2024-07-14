@@ -134,6 +134,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="Src\Application\GameApplication.h" />
     <ClInclude Include="Src\Application\Component\Light.h" />
     <ClInclude Include="Src\Application\Component\Material.h" />
@@ -151,8 +152,12 @@
     <ClInclude Include="Src\Application\FbxLoader.h" />
     <ClInclude Include="Src\Application\Helper.h" />
     <ClInclude Include="Src\Application\Win32Application.h" />
+    <ClInclude Include="Src\Application\AppInfo.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ConstantBuffer.cpp" />
+    <ClCompile Include="Src\Application\AppInfo.cpp" />
+    <ClCompile Include="Src\Application\Component\ObjectService.cpp" />
     <ClCompile Include="Src\Application\GameApplication.cpp" />
     <ClCompile Include="Src\Application\Component\Light.cpp" />
     <ClCompile Include="Src\Application\Component\Material.cpp" />

@@ -1,4 +1,6 @@
 #pragma once
+#include <dxgi1_6.h>
+#include <stdexcept>
 
 
 // D3D12Deviceの生成

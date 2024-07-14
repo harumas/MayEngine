@@ -14,10 +14,10 @@ protected:
 	virtual ~Object() = default;
 
 public:
-	virtual void OnCreate();
-	virtual void OnUpdate();
-	virtual void OnDraw();
-	virtual void OnDestroy();
+	virtual void OnCreate() {}
+	virtual void OnUpdate() {}
+	virtual void OnDraw() {}
+	virtual void OnDestroy() {}
 
 private:
 	Object(const Object&) = delete;
@@ -44,7 +44,12 @@ public:
 		return ptr;
 	}
 
-	static void SendOnUpdate()
+	static void Register(const shared_ptr<Object>& object)
+	{
+		objects.push_back(object);
+	}
+
+	static void ProcessOnUpdate()
 	{
 		for (const auto& object : objects)
 		{

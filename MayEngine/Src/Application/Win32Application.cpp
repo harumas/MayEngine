@@ -1,6 +1,11 @@
 #include "Win32Application.h"
 
-void Win32Application::Run(const std::shared_ptr<RenderPipeline>& dxApp, HINSTANCE hInstance)
+#include <tchar.h>
+
+#include "AppInfo.h"
+#include "GameApplication.h"
+
+void Win32Application::Run(GameApplication& gameApp, HINSTANCE hInstance)
 {
 	// ウィンドウクラス生成
 	WNDCLASSEX windowClass = {};
@@ -13,13 +18,13 @@ void Win32Application::Run(const std::shared_ptr<RenderPipeline>& dxApp, HINSTAN
 	RegisterClassEx(&windowClass);
 
 	// ウィンドウサイズの調整
-	RECT windowRect = { 0, 0, dxApp->GetWindowWidth(), dxApp->GetWindowHeight() };
+	RECT windowRect = { 0, 0, AppInfo::GetWindowWidth(), AppInfo::GetWindowHeight() };
 	AdjustWindowRect(&windowRect, WS_OVERLAPPEDWINDOW, false);
 
 	// ウィンドウオブジェクトの生成
 	HWND hwnd = CreateWindow(
 		windowClass.lpszClassName,
-		dxApp->GetTitle(),
+		AppInfo::GetTitle(),
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -32,7 +37,7 @@ void Win32Application::Run(const std::shared_ptr<RenderPipeline>& dxApp, HINSTAN
 	);
 
 	// アプリケーション初期化
-	dxApp->OnInit(hwnd);
+	gameApp.Init(hwnd);
 
 	// ウィンドウ表示
 	ShowWindow(hwnd, SW_SHOW);
@@ -48,12 +53,12 @@ void Win32Application::Run(const std::shared_ptr<RenderPipeline>& dxApp, HINSTAN
 		}
 
 		// アプリケーション更新
-		dxApp->OnUpdate();
-		dxApp->OnRender();
+		gameApp.Update();
+		gameApp.Render();
 	}
 
 	// アプリケーション終了
-	dxApp->OnDestroy();
+	gameApp.Destroy();
 
 	// クラスを登録解除する
 	UnregisterClass(windowClass.lpszClassName, windowClass.hInstance);

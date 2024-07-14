@@ -5,12 +5,13 @@
 #include "ObjectService.h"
 #include "../RenderPipeline.h"
 
-class Material : Object
+class Material : public Object
 {
 public:
-	void CreateShaderResourceBuffer();
-	void CreateShaderResourceView(D3D12_CPU_DESCRIPTOR_HANDLE basicHeapHandle);
+	void CreateShaderResourceBuffer(const wstring& texturePath);
+	void CreateShaderResourceView(UINT heapIndex);
+	void OnUpdate() override;
 private:
 	D3D12_RESOURCE_DESC textureDesc = {};
-	Microsoft::WRL::ComPtr<ID3D12Resource> textureBuffer_;
+	Microsoft::WRL::ComPtr<ID3D12Resource> textureBuffer;
 };

@@ -1,44 +1,46 @@
 #include "RenderPipeline.h"
-#include "Win32Application.h"
-#include "Component/Camera.h"
-#include "Component/Light.h"
-#include "Component/Material.h"
-#include "Component/Renderer.h"
 
-RenderPipeline::RenderPipeline(unsigned int width, unsigned int height, std::wstring title)
-	: title_(title)
-	  , windowWidth_(width)
-	  , windowHeight_(height)
-	  , viewport_(0.0f, 0.0f, static_cast<float>(windowWidth_), static_cast<float>(windowHeight_))
-	  , scissorrect_(0, 0, static_cast<LONG>(windowWidth_), static_cast<LONG>(windowHeight_))
-	  , cameraObject("Camera"),testObject("Test"), fenceValue_(0)
-	  , fenceEvent_(nullptr)
+#include "AppInfo.h"
+#include "Win32Application.h"
+
+shared_ptr<RenderPipeline> RenderPipeline::instance = nullptr;
+
+RenderPipeline::RenderPipeline()
+	: fenceValue_(0)
+	, fenceEvent_(nullptr)
+	, viewport_(0.0f, 0.0f, AppInfo::GetWindowWidth(), AppInfo::GetWindowHeight())
+	, scissorrect_(0, 0, static_cast<LONG>(AppInfo::GetWindowWidth()), static_cast<LONG>(AppInfo::GetWindowHeight()))
 {
-	light = make_shared<Light>();
-	material = make_shared<Material>();
 }
 
 // 初期化処理
 void RenderPipeline::OnInit(HWND hwnd)
 {
 	LoadPipeline(hwnd);
-	LoadAssets();
-	 
-	camera = cameraObject.AddComponent<Camera>();
-	renderer = testObject.AddComponent<Renderer>();
-	renderer->LoadMesh("Assets/blocks/grass_block.fbx");
-	 
-	auto basicHandle = basicHeap_->GetCPUDescriptorHandleForHeapStart();
-	basicHandle.ptr += device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	light->CreateLightingBufferView(basicHandle);
-	material->CreateShaderResourceView(basicHandle);
-	 
-	//FoV: 90
-	//nearPlane: 1
-	//farPlane: 1000
-	camera->Init(XM_PIDIV2, 1.0f, 1000.0f);
-	camera->transform->position = Vector3{ 0.0f, 3.0f, -10.0f };
-	camera->SetYaw(0.0f);
+	CreateRootSignature();
+	CreatePipelineState();
+}
+
+void RenderPipeline::OnPostInit()
+{
+	// 命令のクローズ
+	commandList_->Close();
+
+	// コマンドリストの実行
+	{
+		ID3D12CommandList* commandLists[] = { commandList_.Get() };
+		commandQueue_->ExecuteCommandLists(1, commandLists);
+	}
+
+	// GPU処理の終了を待機
+	{
+		ThrowIfFailed(commandQueue_->Signal(fence_.Get(), ++fenceValue_));
+		if (fence_->GetCompletedValue() < fenceValue_)
+		{
+			ThrowIfFailed(fence_->SetEventOnCompletion(fenceValue_, fenceEvent_));
+			WaitForSingleObject(fenceEvent_, INFINITE);
+		}
+	}
 }
 
 void RenderPipeline::LoadPipeline(HWND hwnd)
@@ -81,8 +83,8 @@ void RenderPipeline::LoadPipeline(HWND hwnd)
 	{
 		DXGI_SWAP_CHAIN_DESC1 swapchainDesc = {};
 		swapchainDesc.BufferCount = kFrameCount;
-		swapchainDesc.Width = windowWidth_;
-		swapchainDesc.Height = windowHeight_;
+		swapchainDesc.Width = AppInfo::GetWindowWidth();
+		swapchainDesc.Height = AppInfo::GetWindowHeight();
 		swapchainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -111,12 +113,12 @@ void RenderPipeline::LoadPipeline(HWND hwnd)
 		dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 		ThrowIfFailed(device_->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(dsvHeap_.ReleaseAndGetAddressOf())));
 
-		// 基本情報の受け渡し用
-		D3D12_DESCRIPTOR_HEAP_DESC basicHeapDesc = {};
-		basicHeapDesc.NumDescriptors = maxCBufferBlockCount + 1;
-		basicHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		basicHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		ThrowIfFailed(device_->CreateDescriptorHeap(&basicHeapDesc, IID_PPV_ARGS(basicHeap_.ReleaseAndGetAddressOf())));
+		// シェーダーリソースビュー
+		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+		srvHeapDesc.NumDescriptors = 1;
+		srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		ThrowIfFailed(device_->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(srvHeap_.ReleaseAndGetAddressOf())));
 	}
 
 	// スワップチェーンと関連付けてレンダーターゲットビューを生成
@@ -135,8 +137,8 @@ void RenderPipeline::LoadPipeline(HWND hwnd)
 		// 深度バッファー作成
 		D3D12_RESOURCE_DESC depthResDesc = {};
 		depthResDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		depthResDesc.Width = windowWidth_;
-		depthResDesc.Height = windowHeight_;
+		depthResDesc.Width = AppInfo::GetWindowWidth();
+		depthResDesc.Height = AppInfo::GetWindowHeight();
 		depthResDesc.DepthOrArraySize = 1;
 		depthResDesc.Format = DXGI_FORMAT_D32_FLOAT;
 		depthResDesc.SampleDesc.Count = 1;
@@ -174,73 +176,36 @@ void RenderPipeline::LoadPipeline(HWND hwnd)
 	}
 }
 
-void RenderPipeline::LoadAssets()
-{
-	CreateRootSignature();
-
-	CreatePipelineState();
-
-	CreateMatrixBufferResources();
-
-	light->CreateLightingBuffer();
-
-	material->CreateShaderResourceBuffer();
-	 
-	// 命令のクローズ
-	commandList_->Close();
-
-	// コマンドリストの実行
-	{
-		ID3D12CommandList* commandLists[] = { commandList_.Get() };
-		commandQueue_->ExecuteCommandLists(1, commandLists);
-	}
-
-	// GPU処理の終了を待機
-	{
-		ThrowIfFailed(commandQueue_->Signal(fence_.Get(), ++fenceValue_));
-		if (fence_->GetCompletedValue() < fenceValue_)
-		{
-			ThrowIfFailed(fence_->SetEventOnCompletion(fenceValue_, fenceEvent_));
-			WaitForSingleObject(fenceEvent_, INFINITE);
-		}
-	}
-}
-
 void RenderPipeline::CreateRootSignature()
 {
 	// ルートパラメータの生成
 	// ディスクリプタテーブルの実体
-	CD3DX12_DESCRIPTOR_RANGE1 discriptorRanges[3];
-	discriptorRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); // CBV
-	discriptorRanges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); // CBV
-	discriptorRanges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); // SRV
-	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
-	rootParameters[0].InitAsDescriptorTable(3, discriptorRanges, D3D12_SHADER_VISIBILITY_ALL); // 同一パラメータで複数指定
+	CD3DX12_DESCRIPTOR_RANGE1 discriptorRanges[1];
+	discriptorRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); // SRV (テクスチャ)
+	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
+	rootParameters[0].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_ALL); // 同一パラメータで複数指定
+	rootParameters[1].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_ALL); // 同一パラメータで複数指定
+	rootParameters[2].InitAsConstantBufferView(2, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_ALL); // 同一パラメータで複数指定
+	rootParameters[3].InitAsDescriptorTable(1, discriptorRanges, D3D12_SHADER_VISIBILITY_ALL); // 同一パラメータで複数指定
 
 	// サンプラーの生成
 	// テクスチャデータからどう色を取り出すかを決めるための設定
-	D3D12_STATIC_SAMPLER_DESC sampler = {};
-	sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-	sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-	sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-	sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-	sampler.MipLODBias = 0;
-	sampler.MaxAnisotropy = 0;
-	sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-	sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-	sampler.MinLOD = 0.0f;
-	sampler.MaxLOD = D3D12_FLOAT32_MAX;
-	sampler.ShaderRegister = 0;
-	sampler.RegisterSpace = 0;
-	sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	CD3DX12_STATIC_SAMPLER_DESC samplerDesc = CD3DX12_STATIC_SAMPLER_DESC(0);
 
 	// ルートパラメータ、サンプラーからルートシグネチャを生成
 	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 1, &samplerDesc, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 	ComPtr<ID3DBlob> rootSignatureBlob = nullptr;
 	ComPtr<ID3DBlob> errorBlob = nullptr;
 	ThrowIfFailed(D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_0, &rootSignatureBlob, &errorBlob));
 	ThrowIfFailed(device_->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(), rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(rootsignature_.ReleaseAndGetAddressOf())));
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE RenderPipeline::GetDescriptorHandle(UINT heapIndex) const
+{
+	D3D12_CPU_DESCRIPTOR_HANDLE startAddress = srvHeap_->GetCPUDescriptorHandleForHeapStart();
+	startAddress.ptr += device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * heapIndex;
+	return startAddress;
 }
 
 void RenderPipeline::CreatePipelineState()
@@ -293,75 +258,10 @@ void RenderPipeline::CreatePipelineState()
 	ThrowIfFailed(device_->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(pipelinestate_.ReleaseAndGetAddressOf())));
 }
 
-void RenderPipeline::CreateMatrixBufferResources()
-{
-	// 定数バッファーの生成
-	const CD3DX12_HEAP_PROPERTIES constHeapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-	constexpr auto unitSize = (sizeof(mapMatricesData_) + 0xff) & ~0xff;
-	const CD3DX12_RESOURCE_DESC constDesc = CD3DX12_RESOURCE_DESC::Buffer(unitSize * maxCBufferBlockCount); // 256アライメントでサイズを指定
-
-	ThrowIfFailed(device_->CreateCommittedResource(
-		&constHeapProp,
-		D3D12_HEAP_FLAG_NONE,
-		&constDesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(constMatricesBuffer_.ReleaseAndGetAddressOf())));
-}
-
-int RenderPipeline::AssignBuffer()
-{
-	//確保しているバッファを超えたらthrow
-	if (usingCBufferCount >= maxCBufferBlockCount)
-	{
-		ThrowMessage("Matrix buffer overflow!");
-	}
-
-	int handle = usingCBufferCount;
-	usingCBufferCount++;
-
-	return handle;
-}
-
-void RenderPipeline::SetMatrixBuffer(int handle, const DirectX::XMMATRIX& worldMatrix)
-{
-	//バッファを読み取る範囲を設定する
-	const CD3DX12_RANGE readRange(0, 0);
-	const float aspectRatio = static_cast<float>(windowWidth_) / static_cast<float>(windowHeight_);
-
-	//バッファに書き込む
-	constMatricesBuffer_->Map(0, &readRange, reinterpret_cast<void**>(&mapMatricesData_));
-	MatricesData* ptr = mapMatricesData_ + handle;
-	ptr->world = worldMatrix;
-	ptr->viewproj = camera->GetViewMatrix() * camera->GetProjectionMatrix(aspectRatio);
-	constMatricesBuffer_->Unmap(0, nullptr);
-}
-
-void RenderPipeline::SetMatrixBufferPosition(int handle) const
-{
-	D3D12_GPU_DESCRIPTOR_HANDLE startAddress = basicHeap_->GetGPUDescriptorHandleForHeapStart();
-	startAddress.ptr += device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * handle;
-	commandList_->SetGraphicsRootDescriptorTable(0, startAddress);
-}
-
-void RenderPipeline::CreateMatrixBufferView(int handle, const DirectX::XMMATRIX& worldMatrix)
-{
-	int sizeAligned = (sizeof(mapMatricesData_) + 0xff) & ~0xff;
-
-	SetMatrixBuffer(handle, worldMatrix);
-
-	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-	cbvDesc.BufferLocation = constMatricesBuffer_->GetGPUVirtualAddress() + handle * 0x100;
-	cbvDesc.SizeInBytes = sizeAligned;
-
-	D3D12_CPU_DESCRIPTOR_HANDLE ptr = basicHeap_->GetCPUDescriptorHandleForHeapStart();
-	ptr.ptr += device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * handle;
-	device_->CreateConstantBufferView(&cbvDesc, ptr);
-}
-
 // 更新処理
 void RenderPipeline::OnUpdate()
 {
+	ObjectService::ProcessOnUpdate();
 }
 
 // 描画処理
@@ -387,11 +287,10 @@ void RenderPipeline::OnRender()
 		commandList_->SetGraphicsRootSignature(rootsignature_.Get()); // ルートシグネチャ
 		commandList_->RSSetViewports(1, &viewport_);                  // ビューポート
 		commandList_->RSSetScissorRects(1, &scissorrect_);            // シザー短形
-		// ディスクリプタテーブル
-		// ルートパラメータとディスクリプタヒープを紐づける
-		ID3D12DescriptorHeap* ppHeaps[] = { basicHeap_.Get() };
+
+		ID3D12DescriptorHeap* ppHeaps[] = { srvHeap_.Get() };
 		commandList_->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-		commandList_->SetGraphicsRootDescriptorTable(0, basicHeap_->GetGPUDescriptorHandleForHeapStart());
+		commandList_->SetGraphicsRootDescriptorTable(3, srvHeap_->GetGPUDescriptorHandleForHeapStart());
 
 		// レンダーターゲットの設定
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap_->GetCPUDescriptorHandleForHeapStart(), frameIndex, device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV));
@@ -436,3 +335,4 @@ void RenderPipeline::OnDestroy()
 {
 	CloseHandle(fenceEvent_);
 }
+
