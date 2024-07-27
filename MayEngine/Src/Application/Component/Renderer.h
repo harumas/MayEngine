@@ -3,6 +3,12 @@
 #include "../RenderPipeline.h"
 #include "../../../ConstantBuffer.h"
 
+struct Matrices
+{
+	DirectX::XMMATRIX world;
+	DirectX::XMMATRIX viewProj;
+};
+
 class Renderer : public Component
 {
 public:
@@ -19,5 +25,5 @@ private:
 	ComPtr<ID3D12Resource> indexBuffer_;
 	D3D12_INDEX_BUFFER_VIEW indexBufferView_;
 
-	ConstantBuffer<DirectX::XMMATRIX> modelMatrixBuffer;
+	ConstantBuffer<Matrices> matrixBuffer;
 };

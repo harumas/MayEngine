@@ -1,11 +1,13 @@
 ﻿#include "Renderer.h"
 
+#include "Camera.h"
 #include "GameObject.h"
 #include "Transform.h"
+#include "../AppInfo.h"
 
 Renderer::Renderer(const std::shared_ptr<GameObject>& gameObjectPtr) :
 	Component(gameObjectPtr),
-	modelMatrixBuffer(RenderPipeline::instance->device_, RenderPipeline::instance->commandList_)
+	matrixBuffer(RenderPipeline::instance->device_, RenderPipeline::instance->commandList_)
 {
 
 }
@@ -88,10 +90,11 @@ void Renderer::Draw()
 		commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);                // 頂点バッファ
 		commandList->IASetIndexBuffer(&indexBufferView_);                         // インデックスバッファ
 
-		const DirectX::XMMATRIX matrix = gameObject.lock()->GetComponent<Transform>()->GetMatrix();
+		const DirectX::XMMATRIX world = gameObject.lock()->GetComponent<Transform>()->GetMatrix();
+		const DirectX::XMMATRIX viewProj = Camera::current->GetViewMatrix() * Camera::current->GetProjectionMatrix(AppInfo::GetWindowAspectRatio());
 
-		modelMatrixBuffer.SetBufferData(matrix);
-		modelMatrixBuffer.SetConstantBufferView(0);
+		matrixBuffer.SetBufferData({ world,viewProj });
+		matrixBuffer.SetConstantBufferView(0);
 
 		commandList->DrawIndexedInstanced(mesh.indices.size(), 1, 0, 0, 0);  // 描画
 	}

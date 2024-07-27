@@ -1,14 +1,10 @@
 cbuffer cbuff0 : register(b0)
 {
     matrix world;
-}
-
-cbuffer cbuff0 : register(b1)
-{
     matrix viewproj;
 }
 
-cbuffer cbuff1 : register(b2)
+cbuffer cbuff1 : register(b1)
 {
     float3 ambientLight;
     float3 lightColor;

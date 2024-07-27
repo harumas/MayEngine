@@ -4,11 +4,11 @@ Light::Light() :constantLightBuffer(RenderPipeline::instance->device_, RenderPip
 {
 }
 
-void Light::OnCreate()
+void Light::OnDraw()
 {
 	const LightingData lightingData = { ambientLight,lightColor,lightDirection };
 
 	constantLightBuffer.SetBufferData(lightingData);
-	constantLightBuffer.SetConstantBufferView(2);
+	constantLightBuffer.SetConstantBufferView(1);
 }
 

@@ -11,7 +11,7 @@ public:
 	DirectX::XMVECTOR lightColor = { 0.8f, 0.8f, 1.0f };
 	DirectX::XMVECTOR lightDirection = { 0.3f, 0.3f, 0.8f };
 
-	void OnCreate() override;
+	void OnDraw() override;
 private:
 	Light();
 

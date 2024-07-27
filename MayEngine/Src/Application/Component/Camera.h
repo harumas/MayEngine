@@ -1,7 +1,6 @@
 #pragma once
 #include "Component.h"
 #include "GameObject.h"
-#include "../../../ConstantBuffer.h"
 #include "../Component/Transform.h"
 
 class Camera : public Component
@@ -16,15 +15,12 @@ public:
 	void SetYaw(float yaw);
 	void SetPitch(float pitch);
 
-	void OnUpdate() override;
-
 	shared_ptr<Transform> transform;
+	static shared_ptr<Camera> current;
 
 private:
 	float fov;
 	float nearPlane;
 	float farPlane;
-
-	ConstantBuffer<DirectX::XMMATRIX> viewBuffer;
 };
 

@@ -18,6 +18,7 @@ void GameApplication::Init(HWND hwnd)
 
 	cameraObject = GameObject::Create("cameraObject");
 	auto camera = cameraObject->AddComponent<Camera>();
+	Camera::current = camera;
 
 	//FoV: 90
 	//nearPlane: 1

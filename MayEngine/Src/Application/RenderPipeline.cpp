@@ -182,11 +182,10 @@ void RenderPipeline::CreateRootSignature()
 	// ディスクリプタテーブルの実体
 	CD3DX12_DESCRIPTOR_RANGE1 discriptorRanges[1];
 	discriptorRanges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); // SRV (テクスチャ)
-	CD3DX12_ROOT_PARAMETER1 rootParameters[4];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[3];
 	rootParameters[0].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_ALL); // 同一パラメータで複数指定
 	rootParameters[1].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_ALL); // 同一パラメータで複数指定
-	rootParameters[2].InitAsConstantBufferView(2, 0, D3D12_ROOT_DESCRIPTOR_FLAG_NONE, D3D12_SHADER_VISIBILITY_ALL); // 同一パラメータで複数指定
-	rootParameters[3].InitAsDescriptorTable(1, discriptorRanges, D3D12_SHADER_VISIBILITY_ALL); // 同一パラメータで複数指定
+	rootParameters[2].InitAsDescriptorTable(1, discriptorRanges, D3D12_SHADER_VISIBILITY_ALL); // 同一パラメータで複数指定
 
 	// サンプラーの生成
 	// テクスチャデータからどう色を取り出すかを決めるための設定
@@ -290,7 +289,7 @@ void RenderPipeline::OnRender()
 
 		ID3D12DescriptorHeap* ppHeaps[] = { srvHeap_.Get() };
 		commandList_->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-		commandList_->SetGraphicsRootDescriptorTable(3, srvHeap_->GetGPUDescriptorHandleForHeapStart());
+		commandList_->SetGraphicsRootDescriptorTable(2, srvHeap_->GetGPUDescriptorHandleForHeapStart());
 
 		// レンダーターゲットの設定
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap_->GetCPUDescriptorHandleForHeapStart(), frameIndex, device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV));
