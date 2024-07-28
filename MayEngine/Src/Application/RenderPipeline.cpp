@@ -115,7 +115,7 @@ void RenderPipeline::LoadPipeline(HWND hwnd)
 
 		// シェーダーリソースビュー
 		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-		srvHeapDesc.NumDescriptors = 1;
+		srvHeapDesc.NumDescriptors = 50;
 		srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		ThrowIfFailed(device_->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(srvHeap_.ReleaseAndGetAddressOf())));
@@ -200,9 +200,16 @@ void RenderPipeline::CreateRootSignature()
 	ThrowIfFailed(device_->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(), rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(rootsignature_.ReleaseAndGetAddressOf())));
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE RenderPipeline::GetDescriptorHandle(UINT heapIndex) const
+D3D12_CPU_DESCRIPTOR_HANDLE RenderPipeline::GetCPUDescriptorHandle(UINT heapIndex) const
 {
 	D3D12_CPU_DESCRIPTOR_HANDLE startAddress = srvHeap_->GetCPUDescriptorHandleForHeapStart();
+	startAddress.ptr += device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * heapIndex;
+	return startAddress;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE RenderPipeline::GetGPUDescriptorHandle(UINT heapIndex) const
+{
+	D3D12_GPU_DESCRIPTOR_HANDLE startAddress = srvHeap_->GetGPUDescriptorHandleForHeapStart();
 	startAddress.ptr += device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * heapIndex;
 	return startAddress;
 }
@@ -283,18 +290,19 @@ void RenderPipeline::OnRender()
 
 		// パイプラインステートと必要なオブジェクトを設定
 		commandList_->SetPipelineState(pipelinestate_.Get());         // パイプラインステート
-		commandList_->SetGraphicsRootSignature(rootsignature_.Get()); // ルートシグネチャ
+
 		commandList_->RSSetViewports(1, &viewport_);                  // ビューポート
 		commandList_->RSSetScissorRects(1, &scissorrect_);            // シザー短形
+		commandList_->SetGraphicsRootSignature(rootsignature_.Get()); // ルートシグネチャ
 
 		ID3D12DescriptorHeap* ppHeaps[] = { srvHeap_.Get() };
 		commandList_->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-		commandList_->SetGraphicsRootDescriptorTable(2, srvHeap_->GetGPUDescriptorHandleForHeapStart());
 
 		// レンダーターゲットの設定
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap_->GetCPUDescriptorHandleForHeapStart(), frameIndex, device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV));
 		auto dsvHandle = dsvHeap_->GetCPUDescriptorHandleForHeapStart();
 		commandList_->OMSetRenderTargets(1, &rtvHandle, true, &dsvHandle);
+
 		float clearColor[] = { 0.390625f, 0.58203125f, 0.92578125f, 1.0f };  // 空色
 		commandList_->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 		commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
@@ -314,6 +322,7 @@ void RenderPipeline::OnRender()
 	{
 		ID3D12CommandList* commandLists[] = { commandList_.Get() };
 		commandQueue_->ExecuteCommandLists(1, commandLists);
+
 		// 画面のスワップ
 		ThrowIfFailed(swapchain_->Present(1, 0));
 	}

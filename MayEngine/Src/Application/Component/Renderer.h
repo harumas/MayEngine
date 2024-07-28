@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Component.h"
+#include "Material.h"
 #include "../RenderPipeline.h"
 #include "../../../ConstantBuffer.h"
 
@@ -15,10 +16,14 @@ public:
 	explicit Renderer(const std::shared_ptr<GameObject>& gameObjectPtr);
 
 	void LoadMesh(const std::string& filePath);
-	void Draw();
+	void ApplyMaterial(const shared_ptr<Material>& material);
+	void OnDraw() override;
 
 private:
 	Mesh mesh;
+	shared_ptr<Material> material;
+
+	bool hasMaterial;
 
 	ComPtr<ID3D12Resource> vertexBuffer_;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;

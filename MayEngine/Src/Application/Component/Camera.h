@@ -17,7 +17,6 @@ public:
 
 	shared_ptr<Transform> transform;
 	static shared_ptr<Camera> current;
-
 private:
 	float fov;
 	float nearPlane;

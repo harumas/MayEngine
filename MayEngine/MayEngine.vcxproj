@@ -135,6 +135,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ConstantBuffer.h" />
+    <ClInclude Include="Src\Application\Utility\Texture.h" />
     <ClInclude Include="Src\Application\GameApplication.h" />
     <ClInclude Include="Src\Application\Component\Light.h" />
     <ClInclude Include="Src\Application\Component\Material.h" />
@@ -151,6 +152,7 @@
     <ClInclude Include="Src\Application\DXTexFix.h" />
     <ClInclude Include="Src\Application\FbxLoader.h" />
     <ClInclude Include="Src\Application\Helper.h" />
+    <ClInclude Include="Src\Application\Utility\TextureLoader.h" />
     <ClInclude Include="Src\Application\Win32Application.h" />
     <ClInclude Include="Src\Application\AppInfo.h" />
   </ItemGroup>
@@ -158,6 +160,7 @@
     <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="Src\Application\AppInfo.cpp" />
     <ClCompile Include="Src\Application\Component\ObjectService.cpp" />
+    <ClCompile Include="Src\Application\Utility\Texture.cpp" />
     <ClCompile Include="Src\Application\GameApplication.cpp" />
     <ClCompile Include="Src\Application\Component\Light.cpp" />
     <ClCompile Include="Src\Application\Component\Material.cpp" />
@@ -169,6 +172,7 @@
     <ClCompile Include="Src\Application\FbxLoader.cpp" />
     <ClCompile Include="Src\Application\Main.cpp" />
     <ClCompile Include="Src\Application\Utility\MathHelper.cpp" />
+    <ClCompile Include="Src\Application\Utility\TextureLoader.cpp" />
     <ClCompile Include="Src\Application\Win32Application.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -46,7 +46,8 @@ public:
 	void OnUpdate();
 	void OnRender();
 	void OnDestroy();
-	D3D12_CPU_DESCRIPTOR_HANDLE GetDescriptorHandle(UINT heapIndex) const;
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(UINT heapIndex) const;
+	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(UINT heapIndex) const;
 
 	static constexpr unsigned int kFrameCount = 2;
 	static constexpr unsigned int kCbvUrvMax = 3;

@@ -3,9 +3,11 @@
 #include "../RenderPipeline.h"
 #include "../../../ConstantBuffer.h"
 
-class Light : Object
+class Light : public Object
 {
 public:
+	Light();
+
 	// ライティング用
 	DirectX::XMVECTOR ambientLight = { 0.35f, 0.35f, 0.35f };
 	DirectX::XMVECTOR lightColor = { 0.8f, 0.8f, 1.0f };
@@ -13,8 +15,6 @@ public:
 
 	void OnDraw() override;
 private:
-	Light();
-
 	struct LightingData
 	{
 		DirectX::XMVECTOR ambientLight;

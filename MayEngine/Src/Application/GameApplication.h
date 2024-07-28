@@ -2,6 +2,7 @@
 #include "DXTexFix.h"
 #include "RenderPipeline.h"
 #include "Component/GameObject.h"
+#include "Component/Light.h"
 
 class GameApplication
 {
@@ -13,8 +14,10 @@ public:
 	void Render();
 	void Destroy();
 private:
-	shared_ptr<GameObject>	 testObject;
+	shared_ptr<GameObject> grassBlock;
+	shared_ptr<GameObject> steve;
 	shared_ptr<GameObject> cameraObject;
+	shared_ptr<Light> light;
 
 	shared_ptr<RenderPipeline> renderPipeline;
 };

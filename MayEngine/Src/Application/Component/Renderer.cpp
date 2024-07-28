@@ -79,10 +79,18 @@ void Renderer::LoadMesh(const string& filePath)
 	}
 }
 
-void Renderer::Draw()
+void Renderer::ApplyMaterial(const shared_ptr<Material>& material)
+{
+	this->material = material;
+	hasMaterial = true;
+}
+
+void Renderer::OnDraw()
 {
 	if (const auto pipeline = RenderPipeline::instance)
 	{
+		material->SetPass();
+
 		const ComPtr<ID3D12GraphicsCommandList>& commandList = pipeline->commandList_;
 
 		// 描画処理の設定
