@@ -135,6 +135,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ConstantBuffer.h" />
+    <ClInclude Include="Src\Application\Component\ShaderPass.h" />
+    <ClInclude Include="Src\Application\Component\ShaderPass\ShaderPassPool.h" />
     <ClInclude Include="Src\Application\Utility\Texture.h" />
     <ClInclude Include="Src\Application\GameApplication.h" />
     <ClInclude Include="Src\Application\Component\Light.h" />
@@ -160,6 +162,8 @@
     <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="Src\Application\AppInfo.cpp" />
     <ClCompile Include="Src\Application\Component\ObjectService.cpp" />
+    <ClCompile Include="Src\Application\Component\ShaderPass\HalfLambertPass.h" />
+    <ClCompile Include="Src\Application\Component\ShaderPass\ShaderPassPool.cpp" />
     <ClCompile Include="Src\Application\Utility\Texture.cpp" />
     <ClCompile Include="Src\Application\GameApplication.cpp" />
     <ClCompile Include="Src\Application\Component\Light.cpp" />

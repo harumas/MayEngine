@@ -18,7 +18,6 @@ void RenderPipeline::OnInit(HWND hwnd)
 {
 	LoadPipeline(hwnd);
 	CreateRootSignature();
-	CreatePipelineState();
 }
 
 void RenderPipeline::OnPostInit()
@@ -214,56 +213,6 @@ D3D12_GPU_DESCRIPTOR_HANDLE RenderPipeline::GetGPUDescriptorHandle(UINT heapInde
 	return startAddress;
 }
 
-void RenderPipeline::CreatePipelineState()
-{
-	// パイプラインステートの生成
-	// シェーダーオブジェクトの生成
-#if defined(_DEBUG)
-	UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-	UINT compileFlags = 0;
-#endif
-	ComPtr<ID3DBlob> vsBlob;
-	ComPtr<ID3DBlob> psBlob;
-	D3DCompileFromFile(L"Src/Shaders/HalfLambertShaders.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_0", compileFlags, 0, &vsBlob, nullptr);
-	D3DCompileFromFile(L"Src/Shaders/HalfLambertShaders.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_0", compileFlags, 0, &psBlob, nullptr);
-
-	// 頂点レイアウトの生成
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
-
-	// 裏面描画にする場合、コメントを外すべし
-	auto rasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	//rasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-
-	// パイプラインステートオブジェクト(PSO)を生成
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-	psoDesc.pRootSignature = rootsignature_.Get();
-	psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) }; // 入力レイアウトの設定
-	psoDesc.VS = CD3DX12_SHADER_BYTECODE(vsBlob.Get());                       // 頂点シェーダ
-	psoDesc.PS = CD3DX12_SHADER_BYTECODE(psBlob.Get());                       // ピクセルシェーダ
-	psoDesc.RasterizerState = rasterizerState;                                // ラスタライザーステート
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);                   // ブレンドステート
-	psoDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;                           // サンプルマスクの設定
-	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;   // トポロジタイプ
-	psoDesc.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;    // ストリップ時のカット設定
-	psoDesc.NumRenderTargets = 1;                                             // レンダーターゲット数
-	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;                       // レンダーターゲットフォーマット
-	psoDesc.SampleDesc.Count = 1;                                             // マルチサンプリングの設定
-
-	// 深度ステンシル 
-	psoDesc.DepthStencilState.DepthEnable = true;                             // 深度バッファーを使用するか
-	psoDesc.DepthStencilState.StencilEnable = false;                          // ステンシルテストを行うか
-	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;                                // 深度バッファーで使用するフォーマット
-	psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;         // 書き込む
-	psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;    // 小さい方を採用する
-	ThrowIfFailed(device_->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(pipelinestate_.ReleaseAndGetAddressOf())));
-}
-
 // 更新処理
 void RenderPipeline::OnUpdate()
 {
@@ -276,7 +225,7 @@ void RenderPipeline::OnRender()
 	// コマンドリストのリセット
 	{
 		ThrowIfFailed(commandAllocator_->Reset());
-		ThrowIfFailed(commandList_->Reset(commandAllocator_.Get(), pipelinestate_.Get()));
+		ThrowIfFailed(commandList_->Reset(commandAllocator_.Get(), nullptr));
 	}
 
 	// コマンドリストの生成
@@ -287,9 +236,6 @@ void RenderPipeline::OnRender()
 		// リソースバリアの設定 (PRESENT -> RENDER_TARGET)
 		auto startResourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(renderTargets_[frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		commandList_->ResourceBarrier(1, &startResourceBarrier);
-
-		// パイプラインステートと必要なオブジェクトを設定
-		commandList_->SetPipelineState(pipelinestate_.Get());         // パイプラインステート
 
 		commandList_->RSSetViewports(1, &viewport_);                  // ビューポート
 		commandList_->RSSetScissorRects(1, &scissorrect_);            // シザー短形

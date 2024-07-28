@@ -64,7 +64,6 @@ public:
 	ComPtr<ID3D12DescriptorHeap> srvHeap_;              // シェーダーリソースヒープ
 	ComPtr<ID3D12Resource> renderTargets_[kFrameCount]; // バックバッファー
 	ComPtr<ID3D12Resource> depthBuffer_;                // 深度バッファー
-	ComPtr<ID3D12PipelineState> pipelinestate_;         // パイプラインステート
 	ComPtr<ID3D12RootSignature> rootsignature_;         // ルートシグネチャ
 
 	// フェンス
@@ -80,5 +79,4 @@ private:
 
 	void LoadPipeline(HWND hwnd);
 	void CreateRootSignature();
-	void CreatePipelineState();
 };

@@ -14,10 +14,18 @@ void Material::LoadTexture(const wstring& texturePath)
 	}
 }
 
+void Material::ApplyShaderPass(const shared_ptr<ShaderPass>& shaderPass)
+{
+	this->shaderPass = shaderPass;
+}
+
 void Material::SetPass()
 {
 	if (auto pipeline = RenderPipeline::instance)
 	{
+		const ComPtr<ID3D12PipelineState>& state = shaderPass->pipelineState;
+		pipeline->commandList_->SetPipelineState(state.Get());
+
 		auto handle = pipeline->GetGPUDescriptorHandle(mainTexture.bufferId);
 		pipeline->commandList_->SetGraphicsRootDescriptorTable(2, handle);
 	}
