@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <memory>
 #include <string>
 #include <typeindex>
@@ -21,8 +21,7 @@ public:
 	}
 
 	explicit GameObject(const string& name) : name(name)
-	{
-	}
+	{}
 
 	string name;
 

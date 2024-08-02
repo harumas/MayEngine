@@ -1,8 +1,8 @@
-﻿#pragma once
+#pragma once
 #include "Component.h"
+#include "ConstantBuffer.h"
 #include "Material.h"
 #include "../RenderPipeline.h"
-#include "../../../ConstantBuffer.h"
 
 struct Matrices
 {

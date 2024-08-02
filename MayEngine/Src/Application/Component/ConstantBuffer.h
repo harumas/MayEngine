@@ -3,8 +3,8 @@
 #include <intsafe.h>
 #include <wrl/client.h>
 
-#include "Src/Application/d3dx12.h"
-#include "Src/Application/Helper.h"
+#include "../d3dx12.h"
+#include "../Helper.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -29,10 +29,10 @@ ConstantBuffer<T>::ConstantBuffer(const ComPtr<ID3D12Device>& device, const ComP
 	ConstantBuffer::device = device;
 	ConstantBuffer::commandList = commandList;
 
-	// å®šæ•°ãƒãƒƒãƒ•ã‚¡ãƒ¼ã®ç”Ÿæˆ
+	// ’è”ƒoƒbƒtƒ@[‚Ì¶¬
 	const auto constHeapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 	constexpr auto size = (sizeof(T) + 0xff) & ~0xff;
-	const CD3DX12_RESOURCE_DESC constDesc = CD3DX12_RESOURCE_DESC::Buffer(size); // 256ã‚¢ãƒ©ã‚¤ãƒ¡ãƒ³ãƒˆã§ã‚µã‚¤ã‚ºã‚’æŒ‡å®š
+	const CD3DX12_RESOURCE_DESC constDesc = CD3DX12_RESOURCE_DESC::Buffer(size); // 256ƒAƒ‰ƒCƒƒ“ƒg‚ÅƒTƒCƒY‚ğw’è
 
 	ThrowIfFailed(device->CreateCommittedResource(
 		&constHeapProp,
@@ -46,7 +46,7 @@ ConstantBuffer<T>::ConstantBuffer(const ComPtr<ID3D12Device>& device, const ComP
 template <typename T>
 void ConstantBuffer<T>::SetBufferData(const T& buffer)
 {
-	//ãƒãƒƒãƒ•ã‚¡ã«æ›¸ãè¾¼ã‚€
+	//ƒoƒbƒtƒ@‚É‘‚«‚Ş
 	T* constMap = nullptr;
 	const CD3DX12_RANGE readRange(0, 0);
 

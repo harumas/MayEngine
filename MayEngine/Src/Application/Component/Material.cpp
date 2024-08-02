@@ -1,4 +1,4 @@
-﻿#include "Material.h"
+#include "Material.h"
 
 #include "../Utility/TextureLoader.h"
 
@@ -23,11 +23,16 @@ void Material::SetPass()
 {
 	if (auto pipeline = RenderPipeline::instance)
 	{
+		shaderPass->SetBuffer();
+
 		const ComPtr<ID3D12PipelineState>& state = shaderPass->pipelineState;
 		pipeline->commandList_->SetPipelineState(state.Get());
 
-		auto handle = pipeline->GetGPUDescriptorHandle(mainTexture.bufferId);
-		pipeline->commandList_->SetGraphicsRootDescriptorTable(2, handle);
+		if (mainTexture.bufferId != UINT16_ERROR)
+		{
+			auto handle = pipeline->GetGPUDescriptorHandle(mainTexture.bufferId);
+			pipeline->commandList_->SetGraphicsRootDescriptorTable(3, handle);
+		}
 	}
 }
 

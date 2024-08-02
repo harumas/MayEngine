@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "DXTexFix.h"
 #include "RenderPipeline.h"
 #include "Component/GameObject.h"
@@ -9,12 +9,12 @@ class GameApplication
 public:
 	GameApplication(unsigned int width, unsigned int height, const std::wstring& title);
 
-	void Init(HWND hwnd);
+	void Init(HINSTANCE hInstance, HWND hwnd);
 	void Update();
 	void Render();
 	void Destroy();
 private:
-	shared_ptr<GameObject> grassBlock;
+	shared_ptr<GameObject> teapot;
 	shared_ptr<GameObject> steve;
 	shared_ptr<GameObject> cameraObject;
 	shared_ptr<Light> light;
