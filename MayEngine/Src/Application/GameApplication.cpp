@@ -5,6 +5,7 @@
 #include "Component/Light.h"
 #include "Component/Material.h"
 #include "Component/Renderer.h"
+#include "Component/SimpleCamera.h"
 #include "Component/ShaderPass/HalfLambertPass.h"
 #include "Component/ShaderPass/PhongPass.h"
 #include "Component/ShaderPass/ShaderPassPool.h"
@@ -24,10 +25,11 @@ void GameApplication::Init(HINSTANCE hInstance, HWND hwnd)
 	renderPipeline->OnInit(hwnd);
 
 	cameraObject = GameObject::Create("cameraObject");
-	auto camera = cameraObject->AddComponent<Camera>();
+	auto camera = cameraObject->AddComponent<SimpleCamera>();
 	Camera::current = camera;
 
 	light = ObjectService::Create<Light>();
+	pointLight = ObjectService::Create<PointLight>();
 
 	auto halfLambertPass = ShaderPassPool::GetShaderPass<HalfLambertPass>();
 	auto phongPass = ShaderPassPool::GetShaderPass<PhongPass>();
@@ -74,6 +76,22 @@ void GameApplication::Init(HINSTANCE hInstance, HWND hwnd)
 	//描画コンポーネントにマテリアルを割り当てる
 	renderer2->ApplyMaterial(material2);
 
+	floor = GameObject::Create("floor");
+	auto renderer3 = floor->AddComponent<Renderer>();
+	auto material3 = ObjectService::Create<Material>();
+
+	renderer3->LoadMesh("Assets/floor.fbx");
+	material3->LoadTexture(L"Assets/textures/floor.png");
+	material3->ApplyShaderPass(halfLambertPass);
+
+	transform = floor->GetComponent<Transform>();
+	transform->position.y -= 3.0;
+	transform->scale.x *= 20.0;
+	transform->scale.z *= 20.0;
+
+	//描画コンポーネントにマテリアルを割り当てる
+	renderer3->ApplyMaterial(material3);
+
 	renderPipeline->OnPostInit();
 }
 
@@ -85,6 +103,7 @@ void GameApplication::Update()
 	transform->rotation.y -= XM_2PI / 360;
 
 	renderPipeline->OnUpdate();
+	Input::PostUpdate();
 }
 
 void GameApplication::Render()

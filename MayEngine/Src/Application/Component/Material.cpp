@@ -31,7 +31,7 @@ void Material::SetPass()
 		if (mainTexture.bufferId != UINT16_ERROR)
 		{
 			auto handle = pipeline->GetGPUDescriptorHandle(mainTexture.bufferId);
-			pipeline->commandList_->SetGraphicsRootDescriptorTable(3, handle);
+			pipeline->commandList_->SetGraphicsRootDescriptorTable(4, handle);
 		}
 	}
 }

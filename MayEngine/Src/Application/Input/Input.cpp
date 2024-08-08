@@ -1,92 +1,100 @@
 #include "Input.h"
 
-
-LPDIRECTINPUT8 Input::g_pDI = nullptr;
-LPDIRECTINPUTDEVICE8 Input::g_pKeyboard = nullptr;
-LPDIRECTINPUTDEVICE8 Input::g_pMouse = nullptr;
-BYTE Input::g_KeyboardState[256] = { 0 };
-DIMOUSESTATE Input::g_MouseState = { 0 };
+bool Input::keyState[];
+std::pair<float, float> Input::mouseDelta = {};
 
 bool Input::Initialize(HINSTANCE hInstance, HWND hWnd)
 {
-	ThrowIfFailed(DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, reinterpret_cast<void**>(&g_pDI), NULL));
+	WNDCLASS wc{};
+	wc.lpfnWndProc = &InputProc;
+	wc.hInstance = ::GetModuleHandle(nullptr);
+	wc.lpszClassName = TEXT("Input");
+	RegisterClass(&wc);
+	HWND hwnd = CreateWindow(wc.lpszClassName, nullptr, 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr, wc.hInstance, nullptr);
 
-	ThrowIfFailed(g_pDI->CreateDevice(GUID_SysKeyboard, &g_pKeyboard, NULL));
+	RAWINPUTDEVICE rid[2]{};
+	// mouse
+	rid[0].usUsagePage = 0x01;
+	rid[0].usUsage = 0x02;
+	rid[0].dwFlags = RIDEV_INPUTSINK;
+	rid[0].hwndTarget = hwnd;
 
-	ThrowIfFailed(g_pKeyboard->SetDataFormat(&c_dfDIKeyboard));
+	// keyboard
+	rid[1].usUsagePage = 0x01;
+	rid[1].usUsage = 0x06;
+	rid[1].dwFlags = RIDEV_INPUTSINK;
+	rid[1].hwndTarget = hwnd;
 
-	ThrowIfFailed(g_pKeyboard->SetCooperativeLevel(hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE));
-
-	ThrowIfFailed(g_pKeyboard->Acquire());
-
-	ThrowIfFailed(g_pDI->CreateDevice(GUID_SysMouse, &g_pMouse, NULL));
-
-	ThrowIfFailed(g_pMouse->SetDataFormat(&c_dfDIMouse));
-
-	ThrowIfFailed(g_pMouse->SetCooperativeLevel(hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE));
-
-	ThrowIfFailed(g_pMouse->Acquire());
+	RegisterRawInputDevices(rid, std::size(rid), sizeof(RAWINPUTDEVICE));
 
 	return true;
 }
 
 void Input::Shutdown()
 {
-	if (g_pMouse)
-	{
-		g_pMouse->Unacquire();
-		g_pMouse->Release();
-		g_pMouse = nullptr;
-	}
-
-	if (g_pKeyboard)
-	{
-		g_pKeyboard->Unacquire();
-		g_pKeyboard->Release();
-		g_pKeyboard = nullptr;
-	}
-
-	if (g_pDI)
-	{
-		g_pDI->Release();
-		g_pDI = nullptr;
-	}
 }
 
 void Input::Update()
 {
-	HRESULT hr;
+}
 
-	hr = g_pKeyboard->GetDeviceState(sizeof(g_KeyboardState), (LPVOID)&g_KeyboardState);
-	if (FAILED(hr))
-	{
-		if ((hr == DIERR_INPUTLOST) || (hr == DIERR_NOTACQUIRED))
-		{
-			g_pKeyboard->Acquire();
-		}
-	}
-
-	hr = g_pMouse->GetDeviceState(sizeof(DIMOUSESTATE), &g_MouseState);
-	if (FAILED(hr))
-	{
-		if ((hr == DIERR_INPUTLOST) || (hr == DIERR_NOTACQUIRED))
-		{
-			g_pMouse->Acquire();
-		}
-	}
+void Input::PostUpdate()
+{
+	mouseDelta.first = 0.0;
+	mouseDelta.second = 0.0;
 }
 
 bool Input::IsKeyPressed(Key key)
 {
-	return (g_KeyboardState[static_cast<BYTE>(key)] & 0x80) != 0;
+	return keyState[static_cast<int>(key)];
 }
 
 bool Input::IsMouseButtonPressed(int button)
 {
-	return (g_MouseState.rgbButtons[button] & 0x80) != 0;
+	return true;
 }
 
 std::pair<float, float> Input::GetMouseDelta()
 {
-	return std::make_pair(g_MouseState.lX, g_MouseState.lY);
+	return mouseDelta;
+}
+
+LRESULT Input::InputProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+{
+	if (Msg == WM_INPUT)
+	{
+		UINT dwSize = 0;
+
+		GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, nullptr, &dwSize, sizeof(RAWINPUTHEADER));
+
+		if (dwSize > 0)
+		{
+			std::vector<BYTE> rawdata(dwSize);
+			if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, rawdata.data(), &dwSize, sizeof(RAWINPUTHEADER)) == dwSize)
+			{
+				RAWINPUT* rawInput = reinterpret_cast<RAWINPUT*>(rawdata.data());
+
+				if (rawInput->header.dwType == RIM_TYPEMOUSE)
+				{
+					int dx = rawInput->data.mouse.lLastX;
+					int dy = rawInput->data.mouse.lLastY;
+
+					mouseDelta.first = dx;
+					mouseDelta.second = dy;
+				}
+
+				if (rawInput->header.dwType == RIM_TYPEKEYBOARD)
+				{
+					USHORT key = rawInput->data.keyboard.VKey;
+					bool isHold = (rawInput->data.keyboard.Flags & RI_KEY_BREAK) == 0;
+
+					keyState[key] = isHold;
+				}
+			}
+		}
+
+		return 0;
+	}
+
+	return ::DefWindowProc(hWnd, Msg, wParam, lParam);
 }

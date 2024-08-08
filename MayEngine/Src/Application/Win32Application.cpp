@@ -51,10 +51,12 @@ void Win32Application::Run(GameApplication& gameApp, HINSTANCE hInstance)
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-
-		// アプリケーション更新
-		gameApp.Update();
-		gameApp.Render();
+		else
+		{
+			// アプリケーション更新
+			gameApp.Update();
+			gameApp.Render();
+		}
 	}
 
 	// アプリケーション終了
@@ -68,11 +70,11 @@ LRESULT CALLBACK Win32Application::WindowProc(HWND hwnd, UINT message, WPARAM wp
 {
 	switch (message)
 	{
-		case WM_DESTROY:
-			PostQuitMessage(0);
-			return 0;
-		default:
-			return DefWindowProc(hwnd, message, wparam, lparam);
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+	default:
+		return DefWindowProc(hwnd, message, wparam, lparam);
 	}
 	return 0;
 }

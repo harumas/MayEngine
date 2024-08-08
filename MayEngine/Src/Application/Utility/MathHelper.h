@@ -44,6 +44,20 @@ struct Vector3 : public XMFLOAT3
 		return *this;
 	}
 
+	void operator+=(const Vector3& other)
+	{
+		this->x += other.x;
+		this->y += other.y;
+		this->z += other.z;
+	}
+
+	void operator-=(const Vector3& other)
+	{
+		this->x -= other.x;
+		this->y -= other.y;
+		this->z -= other.z;
+	}
+
 	//ƒLƒƒƒXƒg
 	operator XMVECTOR() const
 	{
